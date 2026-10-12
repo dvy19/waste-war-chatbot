@@ -6,6 +6,8 @@ from EmbeddingManager import EmbeddingManager
 from VectorStore import VectorStore
 res=load_documents()
 
+from Generator import Generator
+
 #print(res[0].page_content)
 
 '''
@@ -38,7 +40,27 @@ embeddings=embeddingManager.generate_embeddings(texts)
 vectorStore=VectorStore()
 
 vectorStore.add_documents(texts , embeddings)
+
 print(embeddings.shape)
+
+query = "How does recycling help manage waste?"
+
+results = vectorStore.search(query)
+
+print("User question:", query)
+print("\nRetrieved chunks:")
+
+retrieved_chunks = results["documents"][0]
+
+for chunk in retrieved_chunks:
+    print(chunk)
+
+generator = Generator()
+
+answer = generator.generate(query, retrieved_chunks)
+
+print("\nGenerated Answer:")
+print(answer)
 
 
 
