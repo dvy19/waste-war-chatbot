@@ -2,11 +2,13 @@ from document_loader import load_documents
 from text_splitter import  split_documents
 
 from EmbeddingManager import EmbeddingManager
-
 from VectorStore import VectorStore
+from Generator import Generator
+
+# from VectorStore import VectorStore
 res=load_documents()
 
-from Generator import Generator
+# from Generator import Generator
 
 #print(res[0].page_content)
 
@@ -31,37 +33,39 @@ texts=[]
 
 for chunk in chunks:
     texts.append(chunk.page_content)
+embeddingManager = EmbeddingManager()
 
-embeddingManager=EmbeddingManager()
+embeddings = embeddingManager.generate_embeddings(texts)
 
-embeddings=embeddingManager.generate_embeddings(texts)
+print("Embeddings shape:", embeddings.shape)
 
+# Step 2: Store documents and embeddings
+vectorStore = VectorStore(embeddingManager)
 
-vectorStore=VectorStore()
+vectorStore.add_documents(texts, embeddings)
 
-vectorStore.add_documents(texts , embeddings)
-
-print(embeddings.shape)
-
+# Step 3: Retrieve relevant chunks
 query = "How does recycling help manage waste?"
 
 results = vectorStore.search(query)
 
-print("User question:", query)
+print("\nUser question:", query)
 print("\nRetrieved chunks:")
 
-retrieved_chunks = results["documents"][0]
+retrieved_chunks = results["documents"][0] if results["documents"] else []
 
 for chunk in retrieved_chunks:
     print(chunk)
 
+# Step 4: Generate an answer
 generator = Generator()
 
-answer = generator.generate(query, retrieved_chunks)
-
-print("\nGenerated Answer:")
-print(answer)
-
+if retrieved_chunks:
+    answer = generator.generate(query, retrieved_chunks)
+    print("\nGenerated Answer:")
+    print(answer)
+else:
+    print("No relevant chunks found.")
 
 
 
