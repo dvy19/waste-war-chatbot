@@ -1,71 +1,58 @@
-from document_loader import load_documents
-from text_splitter import  split_documents
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from EmbeddingManager import EmbeddingManager
+
 from VectorStore import VectorStore
 from Generator import Generator
 
-# from VectorStore import VectorStore
-res=load_documents()
+embeddingManager=EmbeddingManager()
+vectorStore=VectorStore()
+generator=Generator()
 
-# from Generator import Generator
+app=FastAPI()
 
-#print(res[0].page_content)
+class QueryRequest(BaseModel):
+    question:str
 
-'''
-for doc in res:
-    print(doc.page_content)
-'''
+class QueryResponse(BaseModel):
+    question:str
+    answer:str
+    source:str
 
-chunks=split_documents(documents=res)
+@app.get("/")
+def home():
+    return {"message":"waste managemenet rag api is working"}
 
-print(len(chunks))
-#print(chunks)
 
-'''
-for i, chunk in enumerate(chunks[:3]):
-    print(f"\n--- Chunk {i + 1} ---")
-    print(chunk.page_content)
+@app.post("/ask" , response_model=QueryResponse)
+def ask_question(request:QueryRequest):
 
-'''
+    query=request.question.strip()
 
-texts=[]
+    if not query:
 
-for chunk in chunks:
-    texts.append(chunk.page_content)
-embeddingManager = EmbeddingManager()
+        raise HTTPException(
+            status_code=400,
+            detail="question can not be empty"
+        )
+    results=vectorStore.search(query)
 
-embeddings = embeddingManager.generate_embeddings(texts)
+    retrieved_chunks=results["documents"][0]
 
-print("Embeddings shape:", embeddings.shape)
+    if retrieved_chunks:
+        answer=generator.generate(query , retrieved_chunks)
+    else:
+        answer="i could not find the answer in the document"
 
-# Step 2: Store documents and embeddings
-vectorStore = VectorStore(embeddingManager)
+    source="chromadb"
 
-vectorStore.add_documents(texts, embeddings)
-
-# Step 3: Retrieve relevant chunks
-query = "How does recycling help manage waste?"
-
-results = vectorStore.search(query)
-
-print("\nUser question:", query)
-print("\nRetrieved chunks:")
-
-retrieved_chunks = results["documents"][0] if results["documents"] else []
-
-for chunk in retrieved_chunks:
-    print(chunk)
-
-# Step 4: Generate an answer
-generator = Generator()
-
-if retrieved_chunks:
-    answer = generator.generate(query, retrieved_chunks)
-    print("\nGenerated Answer:")
-    print(answer)
-else:
-    print("No relevant chunks found.")
+    return QueryResponse(
+        question=query,
+        answer=answer,
+        source=source
+    )
 
 
 
+# uvicorn main:app --reload
