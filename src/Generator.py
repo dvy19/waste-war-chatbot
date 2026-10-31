@@ -29,18 +29,19 @@ class Generator:
 
         # Standard generation prompt
         self.generate_prompt = ChatPromptTemplate.from_template("""
-        Answer the question using the provided context (which may come from local documents or web search results).
-
-        If the answer is not available in the context,
-        say: "I could not find the answer in the document."
-
-        Context:
-        {context}
-
-        Question:
-        {question}
-
-        Answer:
+            You are an expert assistant. Answer the question using **only** the provided context sources. 
+            Whenever you use information from a source, cite it explicitly using its source number in brackets (e.g., [1], [2]).
+            
+            If the answer is not available in the context, say: 
+            "I could not find the answer in the provided sources or web search."
+            
+            Context:
+            {context}
+            
+            Question:
+            {question}
+            
+            Answer:
         """)
 
         # Grading prompt template
